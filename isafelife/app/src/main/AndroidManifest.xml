@@ -21,8 +21,8 @@
             android:label="@string/title_activity_interpret" >
         </activity>
         <activity
-            android:name=".CallForHelp"
-            android:label="@string/title_activity_call_for_help" >
+            android:name=".NeedHelp"
+            android:label="@string/title_activity_need_help" >
         </activity>
     </application>
 
