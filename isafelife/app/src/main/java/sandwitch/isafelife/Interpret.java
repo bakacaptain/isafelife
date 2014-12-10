@@ -1,39 +1,52 @@
 package sandwitch.isafelife;
 
-import android.support.v7.app.ActionBarActivity;
-import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 
+import android.content.Context;
+import android.location.Location;
+import android.location.LocationManager;
+import android.support.v7.app.ActionBarActivity;
+
+import com.google.android.gms.location.LocationRequest;
+
+import org.apache.http.client.methods.HttpGet;
+import org.json.JSONArray;
+
+import sandwitch.isafelife.models.Weather;
+import sandwitch.isafelife.utils.JSONParser;
+
+/**
+ *  This activity gets the GPS location, weather from Yahoo,
+ *  Google places and time. This data is sent to evaluation
+ *  to a server.
+ */
 
 public class Interpret extends ActionBarActivity {
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_interpret);
-    }
+    private LocationManager locationManager;
+    private LocationRequest locationRequest;
 
+    public Interpret() {
+        locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
+        locationRequest = LocationRequest.create();
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_interpret, menu);
-        return true;
-    }
+        boolean isGPSEnable = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        if(isGPSEnable){
+            Location currentPos = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
         }
+        
+    }
 
-        return super.onOptionsItemSelected(item);
+    private Weather getWeather(double lat, double lon) {
+        // http://api.openweathermap.org/data/2.5/weather?lat=56.162939&lon=10.203921&units=metric
+
+        String url = "http://api.openweathermap.org/data/2.5/weather?lat="+lat+"&lon="+lon+"&units=metric";
+
+        HttpGet request = new HttpGet(url);
+        JSONArray result = JSONParser.getJSONFromUrl(request);
+
+        // do magic stuff with JSONArray
+
+        return new Weather(0, 0, 0);
     }
 }
