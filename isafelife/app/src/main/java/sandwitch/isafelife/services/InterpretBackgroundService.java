@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.location.LocationManager;
+import android.util.Log;
 
 import org.apache.http.client.methods.HttpGet;
 import org.json.JSONArray;
@@ -47,17 +48,25 @@ public class InterpretBackgroundService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         // do work based on the contents of the intent
 
+        Log.i("service","interpret location");
+
         boolean isGPSEnable = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         if(isGPSEnable){
             Location currentPos = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
-            double lat = currentPos.getLatitude();
-            double lon = currentPos.getLongitude();
+            if(currentPos!=null){
+                double lat = currentPos.getLatitude();
+                double lon = currentPos.getLongitude();
 
-            Weather current_weather = getWeather(lat,lon);
+                Log.i("position",String.format("{0} {1}",lat,lon));
 
+                // Weather current_weather = getWeather(lat,lon);
+            } else {
+                Log.w("position", "position was null");
+            }
         } else {
             // GPS not enabled - warn user
+            Log.w("position", "GPS off!");
         }
     }
 
