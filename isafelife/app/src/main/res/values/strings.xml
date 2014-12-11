@@ -6,5 +6,6 @@
     <string name="action_settings">Settings</string>
     <string name="title_activity_interpret">Interpret</string>
     <string name="title_activity_need_help">NeedHelp</string>
+    <string name="title_activity_main">MainActivity</string>
 
 </resources>
