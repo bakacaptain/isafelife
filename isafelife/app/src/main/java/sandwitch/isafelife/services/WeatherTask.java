@@ -26,14 +26,14 @@ public class WeatherTask extends AsyncTask<Location,Void,Weather> {
         String url = "http://api.openweathermap.org/data/2.5/weather?lat="+lat+"&lon="+lon+"&units=metric";
 
         HttpGet request = new HttpGet(url);
-        JSONArray result = JSONParser.getJSONFromUrl(request);
+        JSONObject result = JSONParser.getJSONFromUrl(request);
 
         double temp_value = 0;
         double wind_speed = 0;
         double rain_value = 0;
 
         // do magic stuff with JSONArray
-        /*try {
+        try {
             JSONObject temp = result.getJSONObject("main");
             temp_value = temp.getDouble("temp");
 
@@ -44,7 +44,7 @@ public class WeatherTask extends AsyncTask<Location,Void,Weather> {
             rain_value = rain.getDouble("3h");
         } catch (JSONException e) {
             Log.e("JSON parse", e.getMessage(), e);
-        }*/
+        }
 
         Weather weather = new Weather(temp_value, wind_speed, rain_value);
         Log.i("weather",weather.toString());

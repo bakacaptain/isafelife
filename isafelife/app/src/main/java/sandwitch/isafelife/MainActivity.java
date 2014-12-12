@@ -126,6 +126,7 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
+    // A dummy listener needed for setting the last known location
     private class SuperLocationListener implements LocationListener {
 
         @Override

@@ -31,7 +31,7 @@ public class JSONParser {
      * @param request
      * @return
      */
-    public static JSONArray getJSONFromUrl(HttpUriRequest request){
+    public static JSONObject getJSONFromUrl(HttpUriRequest request){
         StringBuilder builder = new StringBuilder();
         HttpClient client = new DefaultHttpClient();
 
@@ -58,16 +58,12 @@ public class JSONParser {
             Log.e("http","cannot get",e);
         }
 
-        JSONArray result = null;
+        JSONObject result = null;
 
         try {
             Log.i("JSON",builder.toString());
 
-            JSONObject obj = new JSONObject(builder.toString());
-            //result = new JSONArray(builder.toString());
-
-            Log.i("JSON", "obj parsed");
-            result = new JSONArray();
+            result = new JSONObject(builder.toString());
         } catch (JSONException e) {
             e.printStackTrace();
         }
