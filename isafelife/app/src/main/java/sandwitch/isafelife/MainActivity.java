@@ -1,30 +1,19 @@
 package sandwitch.isafelife;
 
 import android.content.Context;
-import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ToggleButton;
 
-import org.apache.http.client.methods.HttpGet;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.List;
-
-import sandwitch.isafelife.models.Weather;
-import sandwitch.isafelife.services.InterpretBackgroundService;
 import sandwitch.isafelife.services.WeatherTask;
-import sandwitch.isafelife.utils.JSONParser;
 
 
 public class MainActivity extends ActionBarActivity {
