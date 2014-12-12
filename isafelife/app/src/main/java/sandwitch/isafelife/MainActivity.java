@@ -3,6 +3,7 @@ package sandwitch.isafelife;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
@@ -18,8 +19,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.List;
+
 import sandwitch.isafelife.models.Weather;
 import sandwitch.isafelife.services.InterpretBackgroundService;
+import sandwitch.isafelife.services.WeatherTask;
 import sandwitch.isafelife.utils.JSONParser;
 
 
@@ -27,19 +31,23 @@ public class MainActivity extends ActionBarActivity {
 
     private int interpretInterval = 10000; // 10 sec for each poll
     private Handler interpretHandler; // handler for starting background threads
+
     private LocationManager locationManager;
+    private LocationListener locListener;
+    private Location currentLocation = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
+        locListener = new SuperLocationListener();
 
+        locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,5000,10,locListener);
 
         interpretHandler = new Handler();
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -47,6 +55,7 @@ public class MainActivity extends ActionBarActivity {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -63,7 +72,6 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    // TODO: RASMUS - gør som jeg har gjort under med en handler, runnable og service
     // Handle event called when the toggle button for accelerometer has changed
     public void accelerate(View view){
         // Is the toggle on?
@@ -77,7 +85,6 @@ public class MainActivity extends ActionBarActivity {
             Log.i("info","Off");
         }
     }
-
 
     // Handle event called when the toggle button for interpret has changed
     public void interpret(View view){
@@ -94,17 +101,22 @@ public class MainActivity extends ActionBarActivity {
     }
 
     private void createInterpretation(){
+        Log.i("interpret","interpret start");
+
         boolean isGPSEnable = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         if(isGPSEnable){
+            // will return null if the last position wasn't update by location changed
             Location currentPos = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
             if(currentPos!=null){
                 double lat = currentPos.getLatitude();
                 double lon = currentPos.getLongitude();
 
-                Log.i("position",String.format("{0} {1}",lat,lon));
+                Log.i("position","{"+lat+"} {"+lon+"}");
 
-                // Weather current_weather = getWeather(lat,lon);
+                try{
+                    new WeatherTask().execute(currentPos);
+                }catch (Exception e){}
             } else {
                 Log.w("position", "position was null");
             }
@@ -112,32 +124,24 @@ public class MainActivity extends ActionBarActivity {
             // GPS not enabled - warn user
             Log.w("position", "GPS off!");
         }
-
-        Weather weather = getWeather(56.1929,10.16);
-
     }
 
-    private Weather getWeather(double lat, double lon) {
-        // http://api.openweathermap.org/data/2.5/weather?lat=56.162939&lon=10.203921&units=metric
+    private class SuperLocationListener implements LocationListener {
 
-        String url = "http://api.openweathermap.org/data/2.5/weather?lat="+lat+"&lon="+lon+"&units=metric";
-
-        HttpGet request = new HttpGet(url);
-        JSONArray result = JSONParser.getJSONFromUrl(request);
-
-        // do magic stuff with JSONArray
-        try {
-            JSONObject root = result.getJSONObject(0);
-            JSONObject temp = root.getJSONObject("main");
-            JSONObject wind = root.getJSONObject("wind");
-            JSONObject rain = root.getJSONObject("rain");
-
-        } catch (JSONException e) {
-            Log.e("JSON parse",e.getMessage(),e);
+        @Override
+        public void onLocationChanged(Location location) {
+            currentLocation = location;
+            Log.i("location listener","lat:{"+location.getLatitude()+"}, lon;{"+location.getLongitude()+"}");
         }
 
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {}
 
-        return new Weather(0, 0, 0);
+        @Override
+        public void onProviderEnabled(String provider) {}
+        @Override
+        public void onProviderDisabled(String provider) {}
+
     }
 
     // created as a task to avoid stopping the UI thread
@@ -151,6 +155,7 @@ public class MainActivity extends ActionBarActivity {
 
     // start the task to run forever
     private void startInterpreting(){
+
         interpretTask.run();
     }
 

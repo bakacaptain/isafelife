@@ -8,7 +8,7 @@ public class Weather {
     private double windspeed;
     private double rain;
 
-    public Weather(double rain, double windspeed, double temperature) {
+    public Weather(double temperature, double windspeed, double rain) {
         this.rain = rain;
         this.windspeed = windspeed;
         this.temperature = temperature;
@@ -24,5 +24,10 @@ public class Weather {
 
     public double getRain() {
         return rain;
+    }
+
+    @Override
+    public String toString(){
+        return "Temp:{"+temperature+"}, Wind:{"+windspeed+"}, Rain:{"+rain+"}";
     }
 }

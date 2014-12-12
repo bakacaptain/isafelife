@@ -1,5 +1,7 @@
 package sandwitch.isafelife.utils;
 
+import android.util.Log;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -9,6 +11,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -51,16 +54,20 @@ public class JSONParser {
             }else{
                 // http request failed
             }
-        } catch (ClientProtocolException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            Log.e("http","cannot get",e);
         }
 
         JSONArray result = null;
 
         try {
-            result = new JSONArray(builder.toString());
+            Log.i("JSON",builder.toString());
+
+            JSONObject obj = new JSONObject(builder.toString());
+            //result = new JSONArray(builder.toString());
+
+            Log.i("JSON", "obj parsed");
+            result = new JSONArray();
         } catch (JSONException e) {
             e.printStackTrace();
         }
