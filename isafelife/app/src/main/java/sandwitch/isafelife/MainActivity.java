@@ -1,29 +1,48 @@
 package sandwitch.isafelife;
 
 import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
 import sandwitch.isafelife.services.WeatherTask;
+import sandwitch.isafelife.utils.LogWriter;
 
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity implements SensorEventListener {
 
+    // For location interpret
     private int interpretInterval = 10000; // 10 sec for each poll
     private Handler interpretHandler; // handler for starting background threads
 
     private LocationManager locationManager;
     private LocationListener locListener;
-    private Location currentLocation = null;
+    private Location currentLocation = null; // temporary save needed to update last location
+    private LogWriter locWriter;
+
+    // For accelerator
+    String sbody;
+    private LogWriter accWriter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +55,11 @@ public class MainActivity extends ActionBarActivity {
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,5000,10,locListener);
 
         interpretHandler = new Handler();
+
+        Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat df = new SimpleDateFormat("ddMMMyyyy");
+        locWriter = new LogWriter(getApplicationContext(),"Weather"+df.format(calendar.getTime())+".csv");
+        accWriter = new LogWriter(getApplicationContext(),"Acceler"+df.format(calendar.getTime())+".csv");
     }
 
     @Override
@@ -61,19 +85,93 @@ public class MainActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
+
+    // ----------------------------------------------------------------------------------
+    // Store Accelerometer data to file
+    // ----------------------------------------------------------------------------------
+
+    public void generateNote(String sFileName, String sBody){
+
+        try
+        {
+            File root = new File(Environment.getExternalStorageDirectory(), null);
+            if (!root.exists()) {
+                root.mkdirs();
+            }
+            File file = new File(root, sFileName);
+            FileWriter writer = new FileWriter(file);
+            writer.append(sBody);
+            writer.flush();
+            writer.close();
+            Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show();
+        }
+        catch(IOException e)
+        {
+
+        }
+    }
+
     // Handle event called when the toggle button for accelerometer has changed
     public void accelerate(View view){
         // Is the toggle on?
         boolean on = ((ToggleButton) view).isChecked();
 
         if (on) {
+
             // Enable sensing
+            // added fra Rasmus
+            registerAccelerometer();
             Log.i("info","On");
+
+            accWriter.write(sbody);
         } else {
             // Disable sensing
             Log.i("info","Off");
         }
     }
+
+    public void registerAccelerometer() {  //added fra Rasmus
+        SensorManager mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        Sensor accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        // Success! There's a accelerometer.
+        if (accelerometer != null)
+            mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        else {
+// Failure! No accelerometer.
+        }
+    }
+
+
+
+    long lastUpdate = 0; //added fra Rasmus
+    String recording;
+    @Override
+    public final void onSensorChanged(SensorEvent event) {
+        float x= event.values[0];
+        float y= event.values[1];
+        float z= event.values[2];
+
+        long curTime = System.currentTimeMillis();
+
+        if ((curTime - lastUpdate) > 100) {
+            long diffTime = (curTime - lastUpdate);
+            lastUpdate = curTime;
+
+            recording = curTime + "  " + x + "  " + y + "  " + z + ":::"; // if everything else fails... split on :::
+            Log.i("Accelerometer:", recording);
+            sbody = sbody + "  " + recording;
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+
+    // ----------------------------------------------------------------------------------
+    // Interpreting surroundings for bystanders
+    // ----------------------------------------------------------------------------------
+
 
     // Handle event called when the toggle button for interpret has changed
     public void interpret(View view){
@@ -104,7 +202,7 @@ public class MainActivity extends ActionBarActivity {
                 Log.i("position","{"+lat+"} {"+lon+"}");
 
                 try{
-                    new WeatherTask().execute(currentPos);
+                    new WeatherTask(locWriter).execute(currentPos);
                 }catch (Exception e){}
             } else {
                 Log.w("position", "position was null");
@@ -145,7 +243,6 @@ public class MainActivity extends ActionBarActivity {
 
     // start the task to run forever
     private void startInterpreting(){
-
         interpretTask.run();
     }
 
