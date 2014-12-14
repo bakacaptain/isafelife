@@ -11,17 +11,26 @@ import org.json.JSONObject;
 
 import sandwitch.isafelife.models.Weather;
 import sandwitch.isafelife.utils.JSONParser;
+import sandwitch.isafelife.utils.LogWriter;
 
 /**
  * Created by Sam on 12/12/2014.
  */
 public class WeatherTask extends AsyncTask<Location,Void,Weather> {
+
+    private LogWriter writer;
+
+    public WeatherTask(LogWriter writer) {
+        this.writer = writer;
+    }
+
     @Override
     protected Weather doInBackground(Location... params) {
         // http://api.openweathermap.org/data/2.5/weather?lat=56.162939&lon=10.203921&units=metric
 
         double lat = params[0].getLatitude();
         double lon = params[0].getLongitude();
+        double acc = params[0].getAccuracy();
 
         String url = "http://api.openweathermap.org/data/2.5/weather?lat="+lat+"&lon="+lon+"&units=metric";
 
@@ -48,6 +57,11 @@ public class WeatherTask extends AsyncTask<Location,Void,Weather> {
 
         Weather weather = new Weather(temp_value, wind_speed, rain_value);
         Log.i("weather",weather.toString());
+
+        // format:
+        // time,latitute, longtitude, accuracy, temperature, wind speed, rain
+        writer.write(System.currentTimeMillis()+","+lat+","+lon+","+acc+","+temp_value+","+wind_speed+","+rain_value+"\n");
+
         return weather;
     }
 }

@@ -20,29 +20,29 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
 import sandwitch.isafelife.services.WeatherTask;
+import sandwitch.isafelife.utils.LogWriter;
 
 
-public class MainActivity extends ActionBarActivity implements SensorEventListener { // added fra Rasmus
+public class MainActivity extends ActionBarActivity implements SensorEventListener {
 
+    // For location interpret
     private int interpretInterval = 10000; // 10 sec for each poll
     private Handler interpretHandler; // handler for starting background threads
 
     private LocationManager locationManager;
     private LocationListener locListener;
-    private Location currentLocation = null;
+    private Location currentLocation = null; // temporary save needed to update last location
+    private LogWriter locWriter;
 
-    Context context; // Rasmus
-    String fileName = "CA" + System.currentTimeMillis();
-    File file = new File(context.getExternalFilesDir(null), fileName);
-    FileOutputStream outputStream;
-
+    // For accelerator
     String sbody;
-
+    private LogWriter accWriter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +55,11 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,5000,10,locListener);
 
         interpretHandler = new Handler();
+
+        Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat df = new SimpleDateFormat("ddMMMyyyy");
+        locWriter = new LogWriter(getApplicationContext(),"Weather"+df.format(calendar.getTime())+".csv");
+        accWriter = new LogWriter(getApplicationContext(),"Acceler"+df.format(calendar.getTime())+".csv");
     }
 
     @Override
@@ -117,7 +122,8 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
             // added fra Rasmus
             registerAccelerometer();
             Log.i("info","On");
-            generateNote(fileName, sbody);
+
+            accWriter.write(sbody);
         } else {
             // Disable sensing
             Log.i("info","Off");
@@ -196,7 +202,7 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
                 Log.i("position","{"+lat+"} {"+lon+"}");
 
                 try{
-                    new WeatherTask().execute(currentPos);
+                    new WeatherTask(locWriter).execute(currentPos);
                 }catch (Exception e){}
             } else {
                 Log.w("position", "position was null");
