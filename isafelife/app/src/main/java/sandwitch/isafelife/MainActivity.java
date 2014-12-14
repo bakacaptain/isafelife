@@ -80,6 +80,11 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         return super.onOptionsItemSelected(item);
     }
 
+
+    // ----------------------------------------------------------------------------------
+    // Store Accelerometer data to file
+    // ----------------------------------------------------------------------------------
+
     public void generateNote(String sFileName, String sBody){
 
         try
