@@ -66,7 +66,7 @@ public class WeatherTask extends AsyncTask<Location,Void,Weather> {
 
         // https://maps.googleapis.com/maps/api/place/search/json?key=AIzaSyDlrPrOOJnen7_dvxNc8gYXDLrkec-UbzI&location=56.2919,10.1613&radius=200
         String api_key = "AIzaSyDlrPrOOJnen7_dvxNc8gYXDLrkec-UbzI";
-        int places_radius = 150; // meters in a circular from the position
+        int places_radius = 200; // meters in a circular from the position
 
         String places_url = "https://maps.googleapis.com/maps/api/place/search/json?key="+api_key+"&location="+lat+","+lon+"&radius="+places_radius;
 
@@ -90,8 +90,8 @@ public class WeatherTask extends AsyncTask<Location,Void,Weather> {
         Log.i("weather",weather.toString());
 
         // format:
-        // time,latitute, longtitude, accuracy, temperature, wind speed, rain
-        LogWriter.write(this.file,System.currentTimeMillis()+","+lat+","+lon+","+acc+","+temp_value+","+wind_speed+","+rain_value+"\n");
+        // time,latitute, longtitude, accuracy, temperature, wind speed, rain, no of places
+        LogWriter.write(this.file,System.currentTimeMillis()+","+lat+","+lon+","+acc+","+temp_value+","+wind_speed+","+rain_value+","+no_of_nearby_places+"\n");
 
         return weather;
     }
