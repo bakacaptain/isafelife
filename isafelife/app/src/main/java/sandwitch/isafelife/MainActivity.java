@@ -12,18 +12,19 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.support.v7.app.ActionBarActivity;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 
 import sandwitch.isafelife.services.WeatherTask;
 import sandwitch.isafelife.utils.LogWriter;
@@ -37,12 +38,16 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
 
     private LocationManager locationManager;
     private LocationListener locListener;
-    private Location currentLocation = null; // temporary save needed to update last location
-    private LogWriter locWriter;
 
     // For accelerator
-    String sbody;
-    private LogWriter accWriter;
+    String sbody = "";
+
+    private int accelerateInterval = 50; // 20 Hz
+    private Handler accelerateHandler; // Handler for starting background threads
+
+    // Files to be saved
+    private File accFile = null;
+    private File locFile = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,16 +55,14 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         setContentView(R.layout.activity_main);
 
         locListener = new SuperLocationListener();
-
         locationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,5000,10,locListener);
-
         interpretHandler = new Handler();
 
-        Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat df = new SimpleDateFormat("ddMMMyyyy");
-        locWriter = new LogWriter(getApplicationContext(),"Weather"+df.format(calendar.getTime())+".csv");
-        accWriter = new LogWriter(getApplicationContext(),"Acceler"+df.format(calendar.getTime())+".csv");
+        accelerateHandler = new Handler();
+
+        // for auto-hiding edit-text
+        this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
     }
 
     @Override
@@ -85,30 +88,55 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         return super.onOptionsItemSelected(item);
     }
 
+    public void createFiles(View view){
+        EditText editText = (EditText) findViewById(R.id.edit_message);
+        String text = editText.getText().toString().replaceAll(" ","");
+        String postfix = text.equals("") ? ""+System.currentTimeMillis() : text;
+
+        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+
+        File root = new File(dir,"");
+        root.mkdirs();
+
+        try{
+            accFile = new File(root,"Accel_"+postfix+".csv");
+            accFile.createNewFile();
+            Log.i("file", "created " + accFile.getAbsoluteFile());
+            locFile = new File(root,"Loca_"+postfix+".csv");
+            locFile.createNewFile();
+            Log.i("file","created "+locFile.getAbsoluteFile());
+            Toast.makeText(getApplicationContext(), "Created both files",Toast.LENGTH_SHORT);
+        }catch (Exception e){
+            Log.e("file",e.getMessage(),e);
+            Toast.makeText(getApplicationContext(), "Failed to create file",Toast.LENGTH_SHORT);
+        }
+    }
 
     // ----------------------------------------------------------------------------------
     // Store Accelerometer data to file
     // ----------------------------------------------------------------------------------
 
-    public void generateNote(String sFileName, String sBody){
-
-        try
-        {
-            File root = new File(Environment.getExternalStorageDirectory(), null);
-            if (!root.exists()) {
-                root.mkdirs();
-            }
-            File file = new File(root, sFileName);
-            FileWriter writer = new FileWriter(file);
-            writer.append(sBody);
-            writer.flush();
-            writer.close();
-            Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show();
+    // created as a task to avoid stopping the UI thread
+    Runnable accelerateTask = new Runnable() {
+        @Override
+        public void run() {
+            generateNote();
+            accelerateHandler.postDelayed(accelerateTask, accelerateInterval);
         }
-        catch(IOException e)
-        {
+    };
 
-        }
+    // start the task to run forever
+    private void startAccelerating(){
+        accelerateTask.run();
+    }
+
+    // stops the task
+    private void stopAccelerating(){
+        accelerateHandler.removeCallbacks(accelerateTask);
+    }
+
+    public void generateNote(){
+        LogWriter.write(accFile,this.sbody);
     }
 
     // Handle event called when the toggle button for accelerometer has changed
@@ -121,12 +149,13 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
             // Enable sensing
             // added fra Rasmus
             registerAccelerometer();
-            Log.i("info","On");
-
-            accWriter.write(sbody);
+            startAccelerating();
+            Log.i("accelerometer","Accel On");
         } else {
-            // Disable sensing
-            Log.i("info","Off");
+            //Stop writing acceleration data
+            //note: yeah we should stop the accelerometer too, but too lazy :/
+            stopAccelerating();
+            Log.i("accelerometer","Accel Off");
         }
     }
 
@@ -137,7 +166,7 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         if (accelerometer != null)
             mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         else {
-// Failure! No accelerometer.
+            // Failure! No accelerometer.
         }
     }
 
@@ -157,9 +186,9 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
             long diffTime = (curTime - lastUpdate);
             lastUpdate = curTime;
 
-            recording = curTime + "  " + x + "  " + y + "  " + z + ":::"; // if everything else fails... split on :::
-            Log.i("Accelerometer:", recording);
-            sbody = sbody + "  " + recording;
+            recording = curTime + "," + x + "," + y + "," + z + "\n";
+            Log.i("Accelerometer", recording);
+            sbody = sbody + recording;
         }
     }
 
@@ -202,7 +231,11 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
                 Log.i("position","{"+lat+"} {"+lon+"}");
 
                 try{
-                    new WeatherTask(locWriter).execute(currentPos);
+                    if(locFile!=null){
+                        new WeatherTask(locFile).execute(currentPos);
+                    }else{
+                        Log.w("position","File was null");
+                    }
                 }catch (Exception e){}
             } else {
                 Log.w("position", "position was null");
@@ -218,7 +251,6 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
 
         @Override
         public void onLocationChanged(Location location) {
-            currentLocation = location;
             Log.i("location listener","lat:{"+location.getLatitude()+"}, lon;{"+location.getLongitude()+"}");
         }
 

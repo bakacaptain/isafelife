@@ -8,13 +8,34 @@
     android:orientation="vertical"
     android:id="@+id/main_layout">
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="File group name"
+        android:id="@+id/textView0" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/edit_message"
+        android:hint="File name"
+         />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/button"
+        android:text="Create files"
+        android:onClick="createFiles" />
+
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:text="Accelerometer sensing"
-        android:id="@+id/textView" />
+        android:id="@+id/textView1" />
 
     <ToggleButton
         android:layout_width="wrap_content"
